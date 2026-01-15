@@ -12,7 +12,12 @@ import fitz  # PyMuPDF
 # =====================================================
 # CONFIG
 # =====================================================
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\10119145\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+#pytesseract.pytesseract.tesseract_cmd = r"C:\Users\10119145\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+
+# Only set path locally
+if os.name == "nt":
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Users\10119145\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 st.set_page_config("Matric Math Master", layout="wide", page_icon="🎓")
