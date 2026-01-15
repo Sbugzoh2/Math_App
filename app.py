@@ -62,7 +62,7 @@ def extract_pdf_text(uploaded_file):
 # SESSION STATE
 # =====================================================
 if "learner" not in st.session_state:
-    st.session_state.learner = {"name": "", "solved": 0, "marks": 0}
+    st.session_state.learner = {"name": "", "solved": 0, "Marks": 0}
 
 if "copied_text" not in st.session_state:
     st.session_state.copied_text = ""
@@ -75,72 +75,72 @@ practice_data = {
 "Algebra": [
 {"question": r"\text{Solve for } x:\; x^2 - 5x + 6 = 0",
  "solution_steps":[
- r"(x-2)(x-3)=0 \quad (1)",
- r"x-2=0 \;\text{or}\; x-3=0 \quad (1)",
- r"x=2 \;\text{or}\; x=3 \quad (1)"
+ r"(x-2)(x-3)=0 \quad (1 Mark)",
+ r"x-2=0 \;\text{or}\; x-3=0 \quad (1 Mark)",
+ r"x=2 \;\text{or}\; x=3 \quad (1 Mark)"
  ],
  "final_answer": r"x=2 \;\text{or}\; x=3",
- "marks":3},
+ "Marks":3},
 {"question": r"\text{Solve for } x:\; 3x^2=12",
  "solution_steps":[
- r"x^2=4 \quad (1)",
- r"x=\pm2 \quad (2)"
+ r"x^2=4 \quad (1 Mark)",
+ r"x=\pm2 \quad (2 Marks)"
  ],
  "final_answer": r"x=\pm2",
- "marks":3}
+ "Marks":3}
 ],
 "Sequences": [
 {"question": r"\text{Find the 10th term of } 3,7,11,\dots",
  "solution_steps":[
- r"a=3,\; d=4 \quad (1)",
- r"T_n=a+(n-1)d \quad (1)",
- r"T_{10}=39 \quad (1)"
+ r"a=3,\; d=4 \quad (1 Mark)",
+ r"T_n=a+(n-1)d \quad (1 Mark)",
+ r"T_{10}=39 \quad (1 Mark)"
  ],
  "final_answer": r"39",
- "marks":3}
+ "Marks":3}
 ],
 "Financial Mathematics": [
 {"question": r"\text{Find } A \text{ if } P=1000,\; i=10\%,\; n=2",
  "solution_steps":[
- r"A=P(1+i)^n \quad (1)",
- r"A=1000(1.1)^2=1210 \quad (2)"
+ r"A=P(1+i)^n \quad (1 Mark)",
+ r"A=1000(1.1)^2=1210 \quad (2 Marks)"
  ],
  "final_answer": r"1210",
- "marks":3}
+ "Marks":3}
 ],
 "Calculus": [
 {"question": r"\text{Differentiate } f(x)=3x^2",
  "solution_steps":[
- r"\frac{d}{dx}(3x^2)=6x \quad (3)"
+ r"\frac{d}{dx}(3x^2)=6x \quad (3 Marks)"
  ],
  "final_answer": r"6x",
- "marks":3}
+ "Marks":3}
 ]
 },
 "Paper 2": {
 "Analytical Geometry": [
 {"question": r"\text{Find the distance between } A(1,2), B(4,6)",
  "solution_steps":[
- r"d=\sqrt{(4-1)^2+(6-2)^2}=5 \quad (3)"
+ r"d=\sqrt{(4-1)^2+(6-2)^2}=5 \quad (3 Marks)"
  ],
  "final_answer": r"5",
- "marks":3}
+ "Marks":3}
 ],
 "Trigonometry": [
 {"question": r"\text{Solve } \sin x=\frac12,\; 0^\circ\le x\le360^\circ",
  "solution_steps":[
- r"x=30^\circ,\;150^\circ \quad (3)"
+ r"x=30^\circ,\;150^\circ \quad (3 Marks)"
  ],
  "final_answer": r"30^\circ,\;150^\circ",
- "marks":3}
+ "Marks":3}
 ],
 "Statistics & Probability": [
 {"question": r"\text{Find the mean of } 2,4,6,8",
  "solution_steps":[
- r"\bar{x}=\frac{20}{4}=5 \quad (3)"
+ r"\bar{x}=\frac{20}{4}=5 \quad (3 Marks)"
  ],
  "final_answer": r"5",
- "marks":3}
+ "Marks":3}
 ]
 }
 }
@@ -152,7 +152,7 @@ st.sidebar.title("🎓 Matric Math Master")
 mode = st.sidebar.radio(
     "Choose Mode",
     ["📚 Past Papers (PDF)",
-     "📷 OCR Question",
+     "📷 OCR Question (Coming to live soon!)",
      "🧮 AI Step-by-Step Solver",
      "📝 Practice Questions",
      "🎯 Learner Profile",
@@ -181,9 +181,9 @@ if mode=="📝 Practice Questions":
             st.latex(step)
         st.success("Final Answer")
         st.latex(q_data["final_answer"])
-        st.info(f"Total Marks: {q_data['marks']}")
+        st.info(f"Total Marks: {q_data['Marks']}")
         st.session_state.learner["solved"] += 1
-        st.session_state.learner["marks"] += q_data["marks"]
+        st.session_state.learner["Marks"] += q_data["Marks"]
 
 # =====================================================
 # AI SOLVER (FULL PAPER 1 & PAPER 2 LOGIC)
@@ -362,7 +362,7 @@ elif mode=="📚 Past Papers (PDF)":
 elif mode=="🎯 Learner Profile":
     st.title("🎯 Learner Profile")
     st.metric("Solved", st.session_state.learner["solved"])
-    st.metric("Marks", st.session_state.learner["marks"])
+    st.metric("Marks", st.session_state.learner["Marks"])
 
 # =====================================================
 # FORMULA SHEET
