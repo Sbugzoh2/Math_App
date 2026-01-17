@@ -8,6 +8,7 @@ import cv2
 import pytesseract
 import matplotlib.pyplot as plt
 import fitz  # PyMuPDF
+from sympy.solvers.inequalities import solve_univariate_inequality
 
 # =====================================================
 # CONFIG
@@ -88,6 +89,7 @@ practice_data = {
  ],
  "final_answer": r"x=\pm2",
  "Marks":3}
+
 ],
 "Sequences": [
 {"question": r"\text{Find the 10th term of } 3,7,11,\dots",
@@ -210,72 +212,528 @@ elif mode=="🧮 AI Step-by-Step Solver":
     if st.button("Solve") and question:
         try:
             # ------------------------------
-            # CLEAN INPUT (RHS ONLY)
+            # CLEAN & PARSE INPUT
             # ------------------------------
-            if "=" in question:
-                question = question.split("=")[1]
-
-            expr = sp.sympify(question)
-
-            st.markdown("### 🔹 Interpreted Expression")
-            st.latex(expr)
+            # Replace ^ with ** for SymPy and remove spaces
+            q_clean = question.replace("^", "**").replace(" ", "")
+            
+            # Split by comma to handle simultaneous equations
+            raw_eqs = q_clean.split(",")
+            
+            # Identify all variable symbols (e.g., x, y)
+            symbols_in_expr = sorted(list(set(re.findall(r"[a-zA-Z]", q_clean))))
+            symbols_dict = {s: sp.symbols(s) for s in symbols_in_expr}
+            var_list = list(symbols_dict.values())
 
             # =====================================================
             # PAPER 1
             # =====================================================
             if topic == "Algebra":
                 st.markdown("### ✏️ Algebra Solution")
-                st.latex(sp.latex(expr) + "=0")
 
-                solutions = sp.solve(expr, x)
-                for sol in solutions:
-                    st.latex(r"x=" + sp.latex(sol))
+                # ------------------------------
+                # CLEAN & PARSE INPUT
+                # ------------------------------
+                question_clean = question.replace("^", "**").replace(" ", "")
+                question_clean = re.sub(r'(\))(\()', r'\1*\2', question_clean)
+                question_clean = re.sub(r'(\d)([a-zA-Z\(])', r'\1*\2', question_clean)
+                question_clean = question_clean.replace("≤", "<=").replace("≥", ">=")
+
+                raw_eqs = question_clean.split(",")
+                symbols_in_expr = sorted(list(set(re.findall(r"[a-zA-Z]", question_clean))))
+                symbols_dict = {s: sp.symbols(s) for s in symbols_in_expr}
+                var_list = list(symbols_dict.values())
+
+                try:
+                    parsed_eqs = []
+                    is_inequality = False
+
+                    for eq_str in raw_eqs:
+                        if any(op in eq_str for op in ["<=", ">=", "<", ">"]):
+                            is_inequality = True
+                            parsed_eqs.append(sp.sympify(eq_str, locals=symbols_dict))
+                        elif "=" in eq_str:
+                            lhs_str, rhs_str = eq_str.split("=")
+                            lhs = sp.sympify(lhs_str, locals=symbols_dict)
+                            rhs = sp.sympify(rhs_str, locals=symbols_dict)
+                            parsed_eqs.append(lhs - rhs)
+                        else:
+                            parsed_eqs.append(sp.sympify(eq_str, locals=symbols_dict))
+
+                    # ------------------------------
+                    # STEP 1: EXPLANATION
+                    # ------------------------------
+                    if is_inequality:
+                        st.write("#### 💡 Step 1: Analyze Inequality")
+                        st.latex(sp.latex(parsed_eqs[0]))  # output of inequality
+                    elif len(parsed_eqs) > 1:
+                        st.write("#### 💡 Step 1: Solving Simultaneous Equations")
+                        st.write("We use substitution or elimination to find where the equations intersect.")
+                    else:
+                        expr = parsed_eqs[0]
+                        degree = sp.degree(expr, gen=var_list[0])
+                        st.write(f"#### 💡 Step 1: Analyze the Equation (Degree {degree})")
+                        if degree >= 2:
+                            factors = sp.factor(expr)
+                            st.write("**Standard Form:**")
+                            st.latex(f"{sp.latex(factors)} = 0")
+
+                    # ------------------------------
+                    # STEP 2: CALCULATION
+                    # ------------------------------
+                    st.write("#### 📝 Step 2: Calculation")
+
+                    # ------------------------------
+                    # INEQUALITY SOLVER (UNCHANGED)
+                    # ------------------------------
+                    if is_inequality:
+                        var = var_list[0]
+                        inequality = parsed_eqs[0]
+
+                        st.markdown("**Step 2.1: Write the inequality**")
+                        st.latex(sp.latex(inequality))
+
+                        st.markdown("**Step 2.2: Check form of the inequality**")
+                        lhs = inequality.lhs - inequality.rhs
+                        if inequality.rhs == 0:
+                            st.write("The inequality is already written with zero on one side.")
+                        else:
+                            st.write("Move all terms to one side.")
+                            st.latex(sp.latex(inequality.func(lhs, 0)))
+
+                        st.markdown("**Step 2.3: Find the roots of the expression**")
+                        factored = sp.factor(lhs)
+                        can_proceed = False
+
+                        if factored != lhs:
+                            can_proceed = True
+                            st.write("The expression can be factorised:")
+                            op_map = {"<=": r"\leq", ">=": r"\geq", "<": "<", ">": ">", "==": "="}
+                            current_op_latex = op_map.get(inequality.rel_op, inequality.rel_op)
+                            st.latex(f"{sp.latex(factored)} {current_op_latex} 0")
+                            roots = sp.solve(factored, var)
+                            st.markdown("**Roots:**")
+                            for r in roots:
+                                st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                        else:
+                            st.write("The expression cannot be factorised easily.")
+                            st.write("We use the **quadratic formula**:")
+                            a = lhs.coeff(var, 2)
+                            b = lhs.coeff(var, 1)
+                            c = lhs.coeff(var, 0)
+                            st.markdown("**Step 2.3.1: Identify coefficients**")
+                            st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                            st.markdown("**Step 2.3.2 (a): Write the quadratic formula**")
+                            st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                            st.markdown("**Step 2.3.2 (b): Substitute into the quadratic formula**")
+                            st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
+                            discriminant = b**2 - 4*a*c
+                            st.markdown("**Step 2.3.3: Calculate the discriminant**")
+                            st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
+                            st.latex(rf"\Delta = {sp.latex(discriminant)}")
+
+                            if discriminant < 0:
+                                st.error("Since the discriminant is negative, there are **no real roots**.")
+                                st.info("Grade 12 learners do not work with complex numbers.")
+                                can_proceed = False
+                            else:
+                                st.markdown("**Step 2.3.4: Calculate the roots**")
+                                roots = sp.solve(lhs, var)
+                                for r in roots:
+                                    st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                                can_proceed = True
+
+                        if can_proceed:
+                            st.markdown("**Step 2.4: Determine critical values**")
+                            critical_points = sp.solve(factored, var)
+                            for cp in critical_points:
+                                st.latex(f"{sp.latex(var)} = {sp.latex(cp)}")
+
+                            st.markdown("**Step 2.5: Sign analysis**")
+                            st.write(
+                                "The sign of the expression changes at the critical values. "
+                                "We test the intervals to determine where the inequality is satisfied."
+                            )
+
+                            st.markdown("**Step 2.6 (Final): Solve the inequality**")
+                            solution = solve_univariate_inequality(inequality, var, relational=False)
+                            st.latex(sp.latex(solution))
+
+                            st.markdown("### 🏁 Final Answer")
+                            if isinstance(solution, sp.Interval):
+                                left = solution.start
+                                right = solution.end
+                                left_op = "<" if solution.left_open else r"\leq"
+                                right_op = "<" if solution.right_open else r"\leq"
+                                st.latex(
+                                    rf"{sp.latex(left)} {left_op} {sp.latex(var)} {right_op} {sp.latex(right)}"
+                                )
+                            else:
+                                st.latex(sp.latex(solution))
+
+                    # ------------------------------
+                    # OTHER ALGEBRAIC PROBLEMS (NEW PART)
+                    # ------------------------------
+                    else:
+                        st.write("💡Solve Equation or System")
+                        
+                        # If single-variable equation, apply quadratic logic
+                        if len(parsed_eqs) == 1 and len(var_list) == 1:
+                            var = var_list[0]
+                            expr = parsed_eqs[0]
+                            degree = sp.degree(expr, gen=var)
+                            
+                            st.write(f"Equation degree: {degree}")
+                            
+                            if degree == 2:
+                                st.write("This is a quadratic equation, we use factorisation or quadratic formula")
+                                factored = sp.factor(expr)
+                                can_proceed = False
+                                if factored != expr:
+                                    can_proceed = True
+                                    st.write("Factorized form:")
+                                    st.latex(f"{sp.latex(factored)} = 0")
+                                    roots = sp.solve(factored, var)
+                                    st.markdown("**Roots:**")
+                                    for r in roots:
+                                        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                                else:
+                                    st.write("Cannot factorise easily, use quadratic formula:")
+                                    a = expr.coeff(var, 2)
+                                    b = expr.coeff(var, 1)
+                                    c = expr.coeff(var, 0)
+                                    st.markdown("**Identify coefficients:**")
+                                    st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                                    st.markdown("**Quadratic formula:**")
+                                    st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                                    st.markdown("**Substitute values:**")
+                                    st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
+                                    discriminant = b**2 - 4*a*c
+                                    st.markdown("**Calculate discriminant:**")
+                                    st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
+                                    st.latex(rf"\Delta = {sp.latex(discriminant)}")
+                                    if discriminant < 0:
+                                        st.error("No real roots.")
+                                    else:
+                                        roots = sp.solve(expr, var)
+                                        st.markdown("**Roots:**")
+                                        for r in roots:
+                                            st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                                        
+                            else:
+                                st.write("Not a quadratic. Using general solve:")
+                                solution = sp.solve(expr, var)
+                                for r in solution:
+                                    st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                        
+                        # Multi-variable system
+                        else:
+                            solution = sp.solve(parsed_eqs, var_list, dict=True)
+                            if not solution:
+                                st.warning("No real solutions found.")
+                            else:
+                                for i, sol in enumerate(solution):
+                                    if len(solution) > 1:
+                                        st.write(f"**Solution Set {i+1}:**")
+                                    for var in var_list:
+                                        if var in sol:
+                                            st.latex(f"{sp.latex(var)} = {sp.latex(sol[var])}")
+                                    st.markdown("---")
+
+                except Exception as e:
+                    st.error("Error parsing expression.")
+                    st.caption(str(e))
+                
 
             elif topic == "Sequences":
                 st.markdown("### 🔢 Arithmetic Sequence")
 
-                a = st.number_input("First term (a)", 1.0)
-                d = st.number_input("Common difference (d)", 1.0)
-                n = st.number_input("Term number (n)", 5, step=1)
+                # Try to extract values from the question automatically
+                try:
+                    # Example expected format: "a=2, d=3, n=10"
+                    a_match = re.search(r"a\s*=\s*([-+]?\d*\.?\d+)", question)
+                    d_match = re.search(r"d\s*=\s*([-+]?\d*\.?\d+)", question)
+                    n_match = re.search(r"n\s*=\s*([-+]?\d+)", question)
 
-                Tn = a + (n - 1) * d
+                    a = float(a_match.group(1)) if a_match else st.number_input("First term (a)", 1.0)
+                    d = float(d_match.group(1)) if d_match else st.number_input("Common difference (d)", 1.0)
+                    n = int(n_match.group(1)) if n_match else st.number_input("Term number (n)", 5, step=1)
 
-                st.latex(r"T_n = a + (n-1)d")
-                st.latex(rf"T_{{{int(n)}}} = {Tn}")
+                    Tn = a + (n - 1) * d
+
+                    st.latex(r"T_n = a + (n-1)d")
+                    st.latex(rf"T_{{{n}}} = {Tn}")
+
+                except Exception as e:
+                    st.error("Could not parse sequence parameters from the question.")
+                    st.caption(str(e))
+
 
             elif topic == "Financial Mathematics":
                 st.markdown("### 💰 Compound Interest")
 
-                P = st.number_input("Principal (P)", 1000.0)
-                i = st.number_input("Interest rate (%)", 10.0) / 100
-                n = st.number_input("Time (years)", 2.0)
+                try:
+                    # Extract P, i, n from question automatically if possible
+                    P_match = re.search(r"P\s*=\s*([-+]?\d*\.?\d+)", question)
+                    i_match = re.search(r"i\s*=\s*([-+]?\d*\.?\d+)", question)
+                    n_match = re.search(r"n\s*=\s*([-+]?\d*\.?\d+)", question)
 
-                A = P * (1 + i) ** n
+                    P = float(P_match.group(1)) if P_match else st.number_input("Principal (P)", 1000.0)
+                    i = float(i_match.group(1))/100 if i_match else st.number_input("Interest rate (%)", 10.0)/100
+                    n = float(n_match.group(1)) if n_match else st.number_input("Time (years)", 2.0)
 
-                st.latex(r"A = P(1+i)^n")
-                st.latex(rf"A = {round(A,2)}")
+                    A = P * (1 + i) ** n
+
+                    st.latex(r"A = P(1+i)^n")
+                    st.latex(rf"A = {round(A, 2)}")
+
+                except Exception as e:
+                    st.error("Could not parse financial parameters from the question.")
+                    st.caption(str(e))
+
 
             elif topic == "Calculus":
-                st.markdown("### 📐 Differentiation")
+                st.markdown("### 📐 Differentiation: Comparison of Methods")
+                
+                try:
+                    # --- 1. CLEAN & PARSE INPUT ---
+                    expr_str = question.lower()
+                    # Remove common prefixes
+                    expr_str = re.sub(r"(find derivative of|differentiate|dy/dx|y\s*=|f\(x\)\s*=)", "", expr_str)
+                    expr_str = expr_str.strip()
 
-                derivative = sp.diff(expr, x)
+                    # Handle implicit multiplication and powers
+                    expr_str = re.sub(r'(\d)([a-zA-Z\(])', r'\1*\2', expr_str)
+                    expr_str = re.sub(r'(\))(\()', r'\1*\2', expr_str)
+                    expr_str = expr_str.replace("^", "**")
 
-                st.latex(r"\frac{dy}{dx} = " + sp.latex(derivative))
+                    # Define symbols and parse
+                    x = sp.symbols("x")
+                    expr = sp.sympify(expr_str)
+                    h = sp.symbols("h")
+
+                    # --- 2. CREATE SIDE-BY-SIDE COLUMNS ---
+                    col1, col2 = st.columns(2)
+
+                    # --- LEFT COLUMN: POWER RULE ---
+                    with col1:
+                        st.subheader("🚀 Power Rule")
+                        st.info("The standard shortcut method.")
+                        
+                        derivative_pr = sp.diff(expr, x)
+                        
+                        st.markdown("**Step 1: Apply rules to terms**")
+                        terms = expr.as_ordered_terms()
+                        for term in terms:
+                            coeff, power = term.as_coeff_exponent(x)
+                            if power != 0:
+                                st.latex(rf"\frac{{d}}{{dx}}({sp.latex(term)}) = {sp.latex(coeff * power)}x^{{{sp.latex(power-1)}}}")
+                            else:
+                                st.latex(rf"\frac{{d}}{{dx}}({sp.latex(term)}) = 0")
+                        
+                        st.markdown("**Final Result (Power Rule):**")
+                        st.latex(rf"f'(x) = {sp.latex(derivative_pr)}")
+
+                    # --- RIGHT COLUMN: FIRST PRINCIPLE ---
+                    with col2:
+                        st.subheader("📝 First Principle")
+                        st.info("Definition using limits.")
+                        
+                        # Step 1: Formula and Substitution
+                        st.markdown("**Step 1: Substitution**")
+                        f_x = expr
+                        f_xh = expr.subs(x, x + h)
+                        
+                        st.latex(r"f'(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}")
+                        st.latex(rf"f'(x) = \lim_{{h \to 0}} \frac{{{sp.latex(f_xh)} - ({sp.latex(f_x)})}}{{h}}")
+                        
+                        # Step 2: Simplify numerator
+                        st.markdown("**Step 2: Expand Numerator**")
+                        numerator_expanded = sp.expand(f_xh - f_x)
+                        st.latex(rf"f'(x) = \lim_{{h \to 0}} \frac{{{sp.latex(numerator_expanded)}}}{{h}}")
+                        
+                        # Step 3: Factor and Cancel h
+                        st.markdown("**Step 3: Cancel $h$**")
+                        # We divide by h manually to show the cancellation clearly
+                        terms_after_h = sp.expand(numerator_expanded / h)
+                        st.latex(rf"f'(x) = \lim_{{h \to 0}} ({sp.latex(terms_after_h)})")
+                        
+                        # Step 4: Final Limit
+                        st.markdown("**Step 4: Final Result**")
+                        derivative_fp = sp.limit(numerator_expanded / h, h, 0)
+                        st.latex(rf"f'(x) = {sp.latex(derivative_fp)}")
+
+                except Exception as e:
+                    st.error("Could not parse the expression for differentiation.")
+                    st.caption(f"Error details: {str(e)}")
+
 
             elif topic == "Functions & Graphs":
-                st.markdown("### 📈 Function Graph")
+                st.markdown("### 📈 Functions & Graphs")
 
-                f = sp.lambdify(x, expr, "numpy")
-                xs = np.linspace(-10, 10, 400)
+                try:
+                    # ---------------------------------------------------
+                    # 1. CLEAN INPUT
+                    # ---------------------------------------------------
+                    expr_str = question.lower()
+                    expr_str = re.sub(r"(graph|sketch|draw|y\s*=|f\(x\)\s*=)", "", expr_str)
+                    expr_str = expr_str.strip()
 
-                fig, ax = plt.subplots()
-                ax.plot(xs, f(xs))
-                ax.axhline(0)
-                ax.axvline(0)
-                ax.grid(True)
+                    # Handle implicit multiplication
+                    expr_str = re.sub(r'(\d)([a-zA-Z\(])', r'\1*\2', expr_str)
+                    expr_str = re.sub(r'(\))(\()', r'\1*\2', expr_str)
 
-                st.pyplot(fig, use_container_width=True)
-                st.latex(r"y=" + sp.latex(expr))
+                    x = sp.symbols("x")
+                    expr = sp.sympify(expr_str)
+
+                    st.markdown("### 🔹 Given Function")
+                    st.latex(r"y = " + sp.latex(expr))
+
+                    # ---------------------------------------------------
+                    # 2. DOMAIN
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 Domain")
+
+                    domain = sp.calculus.util.continuous_domain(expr, x, sp.S.Reals)
+                    st.latex(r"\text{Domain: } " + sp.latex(domain))
+
+                    # ---------------------------------------------------
+                    # 3. Y-INTERCEPT
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 y-intercept")
+                    y_int = expr.subs(x, 0)
+                    st.latex(r"x = 0")
+                    st.latex(r"y = " + sp.latex(y_int))
+                    st.latex(rf"\text{{y-intercept: }} (0, {sp.latex(y_int)})")
+
+                    # ---------------------------------------------------
+                    # 4. X-INTERCEPTS
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 x-intercepts")
+                    roots = sp.solve(expr, x)
+
+                    if roots:
+                        for r in roots:
+                            st.latex(rf"x = {sp.latex(r)}")
+                            st.latex(rf"\text{{Intercept: }} ({sp.latex(r)}, 0)")
+                    else:
+                        st.latex(r"\text{No real x-intercepts}")
+
+                    # ---------------------------------------------------
+                    # 5. FIRST DERIVATIVE
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 First Derivative")
+                    derivative = sp.diff(expr, x)
+                    st.latex(r"\frac{dy}{dx} = " + sp.latex(derivative))
+
+                    # ---------------------------------------------------
+                    # 6. TURNING POINTS
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 Turning Points")
+                    turning_x = sp.solve(derivative, x)
+
+                    turning_points = []
+
+                    if turning_x:
+                        second_derivative = sp.diff(derivative, x)
+
+                        for tx in turning_x:
+                            ty = expr.subs(x, tx)
+                            turning_points.append(ty)
+
+                            st.latex(rf"x = {sp.latex(tx)}")
+                            st.latex(rf"y = {sp.latex(ty)}")
+
+                            nature = second_derivative.subs(x, tx)
+                            if nature > 0:
+                                st.latex(r"\text{Minimum turning point}")
+                            elif nature < 0:
+                                st.latex(r"\text{Maximum turning point}")
+                            else:
+                                st.latex(r"\text{Point of inflection}")
+                    else:
+                        st.latex(r"\text{No turning points}")
+
+                    # ---------------------------------------------------
+                    # 7. AXIS OF SYMMETRY (QUADRATIC ONLY)
+                    # ---------------------------------------------------
+                    if sp.degree(expr, x) == 2:
+                        st.markdown("### 🔹 Axis of Symmetry")
+
+                        a = expr.coeff(x, 2)
+                        b = expr.coeff(x, 1)
+
+                        axis = -b / (2 * a)
+                        st.latex(r"x = -\frac{b}{2a}")
+                        st.latex(rf"x = {sp.latex(axis)}")
+
+                    # ---------------------------------------------------
+                    # 8. RANGE
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 Range")
+
+                    if turning_points:
+                        tp = turning_points[0]
+                        if a > 0:
+                            st.latex(rf"y \geq {sp.latex(tp)}")
+                        else:
+                            st.latex(rf"y \leq {sp.latex(tp)}")
+                    else:
+                        st.latex(r"\text{Range depends on domain and end behaviour}")
+
+                    # ---------------------------------------------------
+                    # 9. ASYMPTOTES (RATIONAL FUNCTIONS)
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 Asymptotes")
+
+                    num, den = sp.fraction(expr)
+
+                    # Vertical asymptotes
+                    vert_asym = sp.solve(den, x)
+                    if vert_asym:
+                        for va in vert_asym:
+                            st.latex(rf"x = {sp.latex(va)}")
+                    else:
+                        st.latex(r"\text{No vertical asymptotes}")
+
+                    # Horizontal asymptote
+                    horiz_asym = sp.limit(expr, x, sp.oo)
+                    if horiz_asym.is_finite:
+                        st.latex(rf"y = {sp.latex(horiz_asym)}")
+
+                    # ---------------------------------------------------
+                    # 10. END BEHAVIOUR
+                    # ---------------------------------------------------
+                    st.markdown("### 🔹 End Behaviour")
+
+                    left = sp.limit(expr, x, -sp.oo)
+                    right = sp.limit(expr, x, sp.oo)
+
+                    st.latex(r"\lim_{x \to -\infty} f(x) = " + sp.latex(left))
+                    st.latex(r"\lim_{x \to \infty} f(x) = " + sp.latex(right))
+
+                    # ---------------------------------------------------
+                    # 11. GRAPH
+                    # ---------------------------------------------------
+                    st.markdown("### 📉 Sketch of the Graph")
+
+                    f = sp.lambdify(x, expr, "numpy")
+                    xs = np.linspace(-10, 10, 400)
+                    ys = f(xs)
+
+                    fig, ax = plt.subplots()
+                    ax.plot(xs, ys)
+                    ax.axhline(0)
+                    ax.axvline(0)
+                    ax.grid(True)
+
+                    st.pyplot(fig, use_container_width=True)
+
+                except Exception as e:
+                    st.error("Could not parse the function for graphing.")
+                    st.caption(str(e))
+
+
 
             # =====================================================
             # PAPER 2
@@ -347,6 +805,7 @@ elif mode=="📷 OCR Question":
 # =====================================================
 # PDF
 # =====================================================
+
 elif mode=="📚 Past Papers (PDF)":
     st.title("📚 PDF Extractor")
     pdf = st.file_uploader("Upload PDF", type=["pdf"])
