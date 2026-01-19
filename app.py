@@ -288,6 +288,38 @@ elif mode=="🧮 AI Step-by-Step Solver":
                         expr = sp.simplify(lhs - rhs)
                         if rhs == 0:
                             st.write("The inequality is already written with zero on one side.")
+                            # ✅ CASE 3: NOT FACTORISABLE → QUADRATIC FORMULA
+                            degree = sp.degree(expr, var)
+                            if degree == 2: #sp.degree(sp.expand(expr), var) == 2:
+                                st.write("Cannot factorise easily. Use the quadratic formula.")
+                                expanded = sp.expand(expr)
+                                st.latex(sp.latex(expanded))
+
+                                a = expanded.coeff(var, 2)
+                                b = expanded.coeff(var, 1)
+                                c = expanded.coeff(var, 0)
+
+                                st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                                st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                                #st.markdown("**Step 2.3.2 (b): Substitute into the quadratic formula**")
+                                st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
+
+                                discriminant = b**2 - 4*a*c
+                                st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
+                                st.latex(rf"\Delta = {sp.latex(discriminant)}")
+
+                                if discriminant < 0:
+                                    #st.error("No real roots.")
+                                    st.error("Since the discriminant is negative, there are **no real roots**.")
+                                    st.info("Grade 12 learners do not work with complex numbers.")
+                                    can_proceed = False
+                                else:
+                                    st.info("Since the determinant is non-negative, there exist at least one real roots.")
+                                    roots = sp.solve(expanded, var)
+                                    can_proceed = True
+                            else:
+                                roots = sp.solve(lhs, var)
+                            can_proceed = True
                         else:
                             st.write("Write the equation in a standard form by moving all terms to one side.")
                             st.latex(sp.latex(inequality.func(expr, 0)))
@@ -417,11 +449,18 @@ elif mode=="🧮 AI Step-by-Step Solver":
                             # CASE 1: Already factorised (product)
                             # -----------------------------------
                             if expr.is_Mul:
-                                st.write("The equation is already factorised.")
+                                st.write("The equation is already factorised!")
                                 st.latex(f"{sp.latex(expr)} = 0")
-
                                 roots = sp.solve(expr, var)
                                 can_proceed = True
+
+                                if can_proceed:
+                                    st.markdown("**Roots:**")
+                                    for r in roots:
+                                        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+
+                                    st.markdown("##### 🏁 Final Answer")
+                                    st.latex(sp.latex(roots))
 
                             # -----------------------------------
                             # CASE 2: Factorise after expanding
@@ -442,46 +481,46 @@ elif mode=="🧮 AI Step-by-Step Solver":
                                 # -----------------------------------
                                 # CASE 3: Quadratic formula (fallback)
                                 # -----------------------------------
-                                elif degree == 2:
-                                    st.write("Cannot factorise easily. Use the quadratic formula.")
+                            #     elif degree == 2:
+                            #         st.write("Cannot factorise easily. Use the quadratic formula.")
 
-                                    a = expanded.coeff(var, 2)
-                                    b = expanded.coeff(var, 1)
-                                    c = expanded.coeff(var, 0)
+                            #         a = expanded.coeff(var, 2)
+                            #         b = expanded.coeff(var, 1)
+                            #         c = expanded.coeff(var, 0)
 
-                                    st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
-                                    st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                            #         st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                            #         st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
 
-                                    discriminant = b**2 - 4*a*c
-                                    st.latex(rf"\Delta = {sp.latex(discriminant)}")
+                            #         discriminant = b**2 - 4*a*c
+                            #         st.latex(rf"\Delta = {sp.latex(discriminant)}")
 
-                                    if discriminant < 0:
-                                        st.error("Since the discriminant is negative, there are no real roots.")
-                                        can_proceed = False
-                                    else:
-                                        roots = sp.solve(expanded, var)
-                                        can_proceed = True
+                            #         if discriminant < 0:
+                            #             st.error("Since the discriminant is negative, there are no real roots.")
+                            #             can_proceed = False
+                            #         else:
+                            #             roots = sp.solve(expanded, var)
+                            #             can_proceed = True
 
-                            # -----------------------------------
-                            # FINAL OUTPUT
-                            # -----------------------------------
-                            if can_proceed:
-                                st.markdown("**Roots:**")
-                                for r in roots:
-                                    st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                            # # -----------------------------------
+                            # # FINAL OUTPUT
+                            # # -----------------------------------
+                                # if can_proceed:
+                                #     st.markdown("**Roots:**")
+                                #     for r in roots:
+                                #         st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
 
-                                st.markdown("##### 🏁 Final Answer")
-                                st.latex(sp.latex(roots))
+                                #     st.markdown("##### 🏁 Final Answer")
+                                #     st.latex(sp.latex(roots))
 
 
                             # -----------------------------------
                             # CASE 2: Polynomial (check degree)
                             # -----------------------------------
-                            else:
-                                degree = sp.degree(expr, gen=var)
-                                st.write(f"Equation degree: {degree}")
+                            #else:
+                            #    degree = sp.degree(expr, gen=var)
+                            #    st.write(f"Equation degree: {degree}")
 
-                                if degree == 2:
+                                elif degree == 2:
                                     st.write("This is a quadratic equation.")
 
                                     factored = sp.factor(expr)
@@ -521,15 +560,29 @@ elif mode=="🧮 AI Step-by-Step Solver":
                                         st.latex(rf"\Delta = {sp.latex(discriminant)}")
 
                                         if discriminant < 0:
-                                            st.error("No real roots.")
+                                            #st.error("No real roots.")
                                             st.error("Since the discriminant is negative, there are **no real roots**.")
                                             st.info("Grade 12 learners do not work with complex numbers.")
+                                            can_proceed = False
                                         else:
                                             roots = sp.solve(expr, var)
                                             st.markdown("##### Roots")
                                             st.info("Since the determinant is non-negative, there exist at least one real roots.")
                                             for r in roots:
                                                 st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                            
+                                                        # # -----------------------------------
+                            # # FINAL OUTPUT
+                                # -----------------------------------
+                                if can_proceed:
+                                    st.markdown("**Roots:**")
+                                    for r in roots:
+                                        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+
+                                    st.markdown("##### 🏁 Final Answer")
+                                    st.latex(sp.latex(roots))
+
+
 
                                 # -----------------------------------
                                 # CASE 3: Not quadratic
@@ -540,8 +593,8 @@ elif mode=="🧮 AI Step-by-Step Solver":
                                 # ------------------------------------------------
                                 else:
                                     degree = sp.degree(expr, gen=var)
-                                    st.markdown(f"**Step 2.1: Write the equation**")
-                                    st.latex(sp.latex(expr) + " = 0")
+                                    #st.markdown(f"**Step 2.1: Write the equation**")
+                                    #st.latex(sp.latex(expr) + " = 0")
                                     
                                     expr_std = sp.expand(expr)
                                     factored = sp.factor(expr_std)
@@ -592,31 +645,33 @@ elif mode=="🧮 AI Step-by-Step Solver":
                                                 
                                                 st.latex(rf"{sp.latex(var)} = {sp.latex(r1)} \quad \text{{or}} \quad {sp.latex(var)} = {sp.latex(r2)}")
                                                 all_roots.extend([r1, r2])
-
-                                        # --- Final Answer Section ---
-                                        st.markdown("### 🏁 Final Answer")
-                                        # Cleaning up duplicates (e.g., if a root is repeated)
-                                        unique_roots = []
-                                        for r in all_roots:
-                                            if r not in unique_roots: unique_roots.append(r)
                                             
-                                        final_string = " \\text{ or } ".join([f"{sp.latex(var)} = {sp.latex(r)}" for r in unique_roots])
-                                        st.latex(final_string)
+
+                                            # --- Final Answer Section ---
+                                            st.markdown("### 🏁 Final Answer")
+                                            # Cleaning up duplicates (e.g., if a root is repeated)
+                                            unique_roots = []
+                                            for r in all_roots:
+                                                if r not in unique_roots: unique_roots.append(r)
+                                                
+                                            final_string = " \\text{ or } ".join([f"{sp.latex(var)} = {sp.latex(r)}" for r in unique_roots])
+                                            st.latex(final_string)
 
                                     else:
+                                        st.write("Problem Solved!")
                                         # Fallback if no factors are found
-                                        st.write("No simple factors found. Solving numerically/generally:")
-                                        roots = sp.solve(expr_std, var)
-                                        for r in roots:
-                                            st.latex(rf"{sp.latex(var)} = {sp.latex(r)}")
+                                        # st.write("No simple factors found. Solving numerically/generally:")
+                                        # roots = sp.solve(expr_std, var)
+                                        # for r in roots:
+                                        #     st.latex(rf"{sp.latex(var)} = {sp.latex(r)}")
 
 
 
-                                #else:
-                                #    st.write("Not a quadratic — using general solver.")
-                                #    solution = sp.solve(expr, var)
-                                #    for r in solution:
-                                #        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                                # else:
+                                #     st.write("Not a quadratic — using general solver.")
+                                #     solution = sp.solve(expr, var)
+                                #     for r in solution:
+                                #         st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
 
                                 # -----------------------------------
                                 # MULTI-VARIABLE SYSTEM (STEP-BY-STEP)
