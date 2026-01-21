@@ -9,6 +9,7 @@ import pytesseract
 import matplotlib.pyplot as plt
 import fitz  # PyMuPDF
 from sympy.solvers.inequalities import solve_univariate_inequality
+from frontend import *
 
 # =====================================================
 # CONFIG
