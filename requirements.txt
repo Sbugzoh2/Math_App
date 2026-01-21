@@ -4,6 +4,7 @@
 
 #To quit:
 #Press Ctrl + C on your keyboard while the terminal window is active.
+--no-cache-dir
 
 streamlit
 sympy
