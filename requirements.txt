@@ -12,6 +12,7 @@ opencv-python-headless
 pytesseract
 Pillow
 matplotlib
-#PyMuPDF
+PyMuPDF
 fitz 
+frontend
 #solve_univariate_inequality
