@@ -155,7 +155,7 @@ mode = st.sidebar.radio(
     "Choose Mode",
     ["📚 Past Papers (PDF)",
      "📷 OCR Question (Coming to live soon!)",
-     "🧮 AI Step-by-Step Solver",
+     "🧮 AI Tutor",
      "📝 Practice Questions",
      "🎯 Learner Profile",
      "📏 Formula Sheet"]
@@ -190,8 +190,8 @@ if mode=="📝 Practice Questions":
 # =====================================================
 # AI SOLVER (FULL PAPER 1 & PAPER 2 LOGIC)
 # =====================================================
-elif mode=="🧮 AI Step-by-Step Solver":
-    st.title("🧮 AI Step-by-Step Solver")
+elif mode=="🧮 AI Tutor":
+    st.title("🧮 AI Tutor")
 
     paper = st.selectbox("Select Paper", ["Paper 1", "Paper 2"])
 
@@ -229,7 +229,7 @@ elif mode=="🧮 AI Step-by-Step Solver":
             # PAPER 1
             # =====================================================
             if topic == "Algebra":
-                st.markdown("### ✏️ Algebra Solution")
+                st.markdown("### Algebra Solution")
 
                 # ------------------------------
                 # CLEAN & PARSE INPUT
@@ -261,562 +261,307 @@ elif mode=="🧮 AI Step-by-Step Solver":
                             parsed_eqs.append(sp.sympify(eq_str, locals=symbols_dict))
 
 #---------------------------------------------START INEQUALITY SOLVER----------------------------------------------------------------------------------
-                    # ------------------------------
-                    # STEP 1
-                    # ------------------------------
+                    # ---------------------------------------------
+                    # START INEQUALITY SOLVER (CLEAN VERSION)
+                    # ---------------------------------------------
                     if is_inequality:
-                        st.write("##### 💡 Step 1: Analyze Inequality")
-                        st.latex(sp.latex(parsed_eqs[0]))
 
-                    st.write("##### 📝 Step 2: Calculation")
-
-                    # ------------------------------
-                    # INEQUALITY SOLVER (FIXED LOGIC)
-                    # ------------------------------
-                    if is_inequality:
                         var = var_list[0]
                         inequality = parsed_eqs[0]
-                        relation = inequality.rel_op
 
-                        lhs = inequality.lhs
-                        rhs = inequality.rhs
-
-                        st.markdown("**Step 2.1: Write the inequality**")
+                        st.write("##### 💡 Step 1: Analyse the inequality")
                         st.latex(sp.latex(inequality))
 
-                        st.markdown("**Step 2.2: Check form of the inequality**")
+                        # ---------------------------------------------
+                        # STEP 2.1: Write in standard form
+                        # ---------------------------------------------
+                        st.write("##### 📝 Step 2: Calculation")
+
+                        lhs, rhs = inequality.lhs, inequality.rhs
                         expr = sp.simplify(lhs - rhs)
-                        if rhs == 0:
-                            st.write("The inequality is already written with zero on one side.")
-                            # ✅ CASE 3: NOT FACTORISABLE → QUADRATIC FORMULA
-                            degree = sp.degree(expr, var)
-                            if degree == 2: #sp.degree(sp.expand(expr), var) == 2:
-                                st.write("Cannot factorise easily. Use the quadratic formula.")
-                                expanded = sp.expand(expr)
-                                st.latex(sp.latex(expanded))
 
-                                a = expanded.coeff(var, 2)
-                                b = expanded.coeff(var, 1)
-                                c = expanded.coeff(var, 0)
+                        st.markdown("**Step 2.1: Write the inequality with zero on one side**")
+                        st.latex(sp.latex(inequality.func(expr, 0)))
 
-                                st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
-                                st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
-                                #st.markdown("**Step 2.3.2 (b): Substitute into the quadratic formula**")
-                                st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
+                        # ---------------------------------------------
+                        # STEP 2.2: Determine degree
+                        # ---------------------------------------------
+                        degree = sp.degree(expr, var)
+                        st.markdown("**Step 2.2: Determine the degree of the expression**")
+                        st.write(f"The degree of the expression is **{degree}**.")
 
-                                discriminant = b**2 - 4*a*c
-                                st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
-                                st.latex(rf"\Delta = {sp.latex(discriminant)}")
+                        roots = []
+                        can_proceed = False
 
-                                if discriminant < 0:
-                                    #st.error("No real roots.")
-                                    st.error("Since the discriminant is negative, there are **no real roots**.")
-                                    st.info("Grade 12 learners do not work with complex numbers.")
-                                    can_proceed = False
-                                else:
-                                    st.info("Since the determinant is non-negative, there exist at least one real roots.")
-                                    roots = sp.solve(expanded, var)
-                                    can_proceed = True
-                            else:
-                                roots = sp.solve(lhs, var)
-                            can_proceed = True
-                        else:
-                            st.write("Write the equation in a standard form by moving all terms to one side.")
-                            st.latex(sp.latex(inequality.func(expr, 0)))
-                            #st.latex(rf"{sp.latex(expr)} {relation} 0")
-
-
-                        st.markdown("**Step 2.3: Find the roots**")
+                        # ---------------------------------------------
+                        # STEP 2.3: Find the roots
+                        # ---------------------------------------------
+                        st.markdown("**Step 2.3: Find the roots of the expression**")
 
                         factored = sp.factor(expr)
                         expanded = sp.expand(expr)
-                        can_proceed = False
 
-                        # ✅ CASE 1: ALREADY FACTORISED (PRODUCT)
-                        if lhs.is_Mul and rhs == 0:
-                            can_proceed = True
+                        # CASE 1: Already factorised
+                        if expr.is_Mul:
                             st.write("The expression is already factorised.")
-                            #st.latex(rf"{sp.latex(lhs)} = 0")
-                            st.latex(sp.latex(inequality.func(expr, 0)))
-                            roots = sp.solve(lhs, var)
-                            
+                            st.latex(sp.latex(expr))
+                            roots = sp.solve(expr, var)
+                            can_proceed = True
 
-                        # ✅ CASE 2: FACTORISABLE AFTER FACTORING
-                        elif factored != lhs:
+                        # CASE 2: Factorisable after factoring
+                        elif factored != expanded:
                             st.write("Factorising the expression:")
+                            st.latex(sp.latex(factored))
+                            roots = sp.solve(factored, var)
+                            can_proceed = True
 
-                            # Expand first
-                            expanded = sp.expand(expr)
-                            st.latex(sp.latex(inequality.func(expanded, 0)))
+                        # CASE 3: Quadratic but not factorisable
+                        elif degree == 2:
+                            st.write("The expression cannot be factorised easily, We use the quadratic formula.")
+                            #st.write("We use the quadratic formula.")
 
-                            degree = sp.degree(expanded, var)
-                            st.write(f"Degree of the inequality: {degree}")
+                            a = expanded.coeff(var, 2)
+                            b = expanded.coeff(var, 1)
+                            c = expanded.coeff(var, 0)
 
-                            # Try factorising the expanded expression
-                            factored_expanded = sp.factor(expanded)
+                            st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                            st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                            st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
 
-                            # ✅ IF FACTORISATION WORKS
-                            if factored_expanded != expanded:
-                                st.write("The expanded expression can be factorised:")
-                                st.latex(sp.latex(factored_expanded))
+                            discriminant = b**2 - 4*a*c
+                            st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
+                            st.latex(rf"\Delta = {sp.latex(discriminant)}")
 
-                                roots = sp.solve(factored_expanded, var)
+                            if discriminant.is_negative:
+                                st.error(
+                                    "Since the discriminant is negative, there are **no real roots**."
+                                )
+                                st.info("Grade 12 learners do not work with complex numbers.")
+                                can_proceed = False
+                            else:
+                                st.info(
+                                    "Since the discriminant is non-negative, real roots exist."
+                                )
+                                roots = sp.solve(expanded, var)
                                 can_proceed = True
 
-                            # ✅ CASE 3: NOT FACTORISABLE → QUADRATIC FORMULA
-                            elif degree == 2: #sp.degree(sp.expand(expr), var) == 2:
-                                st.write("Cannot factorise easily. Use the quadratic formula.")
-                                expanded = sp.expand(expr)
-                                st.latex(sp.latex(expanded))
+                        # CASE 4: Higher degree (Grade 12 limit)
+                        else:
+                            st.warning(
+                                "This inequality cannot be solved using Grade 12 methods."
+                            )
+                            can_proceed = False
 
-                                a = expanded.coeff(var, 2)
-                                b = expanded.coeff(var, 1)
-                                c = expanded.coeff(var, 0)
-
-                                st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
-                                st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
-                                #st.markdown("**Step 2.3.2 (b): Substitute into the quadratic formula**")
-                                st.latex(rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
-
-                                discriminant = b**2 - 4*a*c
-                                st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
-                                st.latex(rf"\Delta = {sp.latex(discriminant)}")
-
-                                if discriminant < 0:
-                                    #st.error("No real roots.")
-                                    st.error("Since the discriminant is negative, there are **no real roots**.")
-                                    st.info("Grade 12 learners do not work with complex numbers.")
-                                    can_proceed = False
-                                else:
-                                    st.info("Since the determinant is non-negative, there exist at least one real roots.")
-                                    roots = sp.solve(expanded, var)
-                                    can_proceed = True
-
-                        if can_proceed:
-                            st.markdown("**Roots:**")
+                        # ---------------------------------------------
+                        # STEP 2.4: Display roots
+                        # ---------------------------------------------
+                        if can_proceed and roots:
+                            st.markdown("**Step 2.4: Critical values**")
                             for r in roots:
                                 st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
 
-                            st.markdown("**Step 2.4: Solve the inequality**")
+                            # ---------------------------------------------
+                            # STEP 2.5: Solve inequality
+                            # ---------------------------------------------
+                            st.markdown("**Step 2.5: Solve the inequality**")
                             solution = solve_univariate_inequality(
                                 inequality, var, relational=False
                             )
 
-                            st.markdown("##### 🏁 Final Answer")
-                            st.latex(sp.latex(solution))
+                            # ---------------------------------------------
+                            # FINAL ANSWER
+                            # ---------------------------------------------
+                            st.markdown("### 🏁 Final Answer")
+
                             if isinstance(solution, sp.Interval):
-                                left = solution.start
-                                right = solution.end
+                                left, right = solution.start, solution.end
                                 left_op = "<" if solution.left_open else r"\leq"
                                 right_op = "<" if solution.right_open else r"\leq"
+
                                 st.latex(
                                     rf"{sp.latex(left)} {left_op} {sp.latex(var)} {right_op} {sp.latex(right)}"
                                 )
                             else:
                                 st.latex(sp.latex(solution))
 
+
 #--------------------------------------------------END INEQUALITY SOLVER----------------------------------------------------------------------------------
 
-                    # ------------------------------
-                    # OTHER ALGEBRAIC PROBLEMS (UPDATED – STRICT LOGIC)
-                    # ------------------------------
+                    # --------------------------------------------------
+                    # ALGEBRAIC EQUATION SOLVER (NO INEQUALITIES)
+                    # GRADE 12 SAFE – REAL ROOTS ONLY
+                    # --------------------------------------------------
                     else:
-                        st.write("💡 Solve Equation or System")
+                        breakpoint = False
+                    #st.markdown("✏️ **Algebraic Equation Solution**")
+
+                    # Assumptions:
+                    # - parsed_eqs: list of sympy expressions already equal to 0
+                    # - raw_eqs: original user input strings
+                    # - var_list: detected variables
+                    # - symbols_dict: sympy symbol dictionary
 
                         if len(parsed_eqs) == 1 and len(var_list) == 1:
                             var = var_list[0]
                             expr = parsed_eqs[0]
 
-                            st.markdown("**Step 2.1: Write the equation**")
-                            #st.latex(f"{sp.latex(expr)} = 0")
+                            # ----------------------------------
+                            # STEP 1: Write equation
+                            # ----------------------------------
+                            st.markdown("###### Step 1: Write the equation")
+
                             if "=" in raw_eqs[0]:
                                 lhs_str, rhs_str = raw_eqs[0].split("=")
                                 lhs = sp.sympify(lhs_str, locals=symbols_dict)
                                 rhs = sp.sympify(rhs_str, locals=symbols_dict)
+                                equation = lhs - rhs
                                 st.latex(sp.latex(sp.Eq(lhs, rhs)))
                             else:
-                                st.latex(sp.latex(sp.sympify(raw_eqs[0], locals=symbols_dict)))
+                                equation = expr
+                                st.latex(sp.latex(expr) + " = 0")
 
+                            # ----------------------------------
+                            # STEP 2: Standard form
+                            # ----------------------------------
 
-                            st.markdown("**Step 2.3: Find the roots**")
+                            st.markdown("###### Step 2: Write in standard form")
 
-                            factored = sp.factor(expr)
-                            expanded = sp.expand(expr)
-                            degree = sp.degree(expanded, var)
-                            can_proceed = False
+                            # expr_raw = equation BEFORE expansion
+                            expr_raw = expr
 
-                            # -----------------------------------
-                            # CASE 1: Already factorised (product)
-                            # -----------------------------------
-                            if expr.is_Mul:
-                                st.write("The equation is already factorised!")
-                                st.latex(f"{sp.latex(expr)} = 0")
-                                roots = sp.solve(expr, var)
-                                can_proceed = True
+                            # RHS is zero because we moved everything to LHS
+                            rhs_is_zero = True
 
-                                if can_proceed:
-                                    st.markdown("**Roots:**")
-                                    for r in roots:
-                                        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
+                            # ----------------------------------
+                            # CASE 1: Already factorised (product form)
+                            # ----------------------------------
+                            if rhs_is_zero and expr_raw.is_Mul:
+                                st.write("The equation is already factorised.")
+                                st.latex(sp.latex(expr_raw) + " = 0")
 
-                                    st.markdown("##### 🏁 Final Answer")
-                                    st.latex(sp.latex(roots))
+                                factored = expr_raw
 
-                            # -----------------------------------
-                            # CASE 2: Factorise after expanding
-                            # -----------------------------------
-                            else:
-                                st.write("Rewrite in standard form:")
-                                st.latex(f"{sp.latex(expanded)} = 0")
+                            # ----------------------------------
+                            # CASE 2: Not factorised → try factorising
+                            # ----------------------------------
+                            elif rhs_is_zero:
+                                expr_std = sp.expand(expr_raw)
+                                st.latex(sp.latex(expr_std) + " = 0")
 
-                                factored_expanded = sp.factor(expanded)
+                                degree = sp.degree(expr_std, var)
+                                st.info(f"The degree of the equation is **{degree}**.")
 
-                                if factored_expanded != expanded:
-                                    st.write("The expression can be factorised:")
-                                    st.latex(f"{sp.latex(factored_expanded)} = 0")
+                                factored = sp.factor(expr_std)
 
-                                    roots = sp.solve(factored_expanded, var)
-                                    can_proceed = True
-
-                                # -----------------------------------
-                                # CASE 3: Quadratic formula (fallback)
-                                # -----------------------------------
-                            #     elif degree == 2:
-                            #         st.write("Cannot factorise easily. Use the quadratic formula.")
-
-                            #         a = expanded.coeff(var, 2)
-                            #         b = expanded.coeff(var, 1)
-                            #         c = expanded.coeff(var, 0)
-
-                            #         st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
-                            #         st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
-
-                            #         discriminant = b**2 - 4*a*c
-                            #         st.latex(rf"\Delta = {sp.latex(discriminant)}")
-
-                            #         if discriminant < 0:
-                            #             st.error("Since the discriminant is negative, there are no real roots.")
-                            #             can_proceed = False
-                            #         else:
-                            #             roots = sp.solve(expanded, var)
-                            #             can_proceed = True
-
-                            # # -----------------------------------
-                            # # FINAL OUTPUT
-                            # # -----------------------------------
-                                # if can_proceed:
-                                #     st.markdown("**Roots:**")
-                                #     for r in roots:
-                                #         st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
-
-                                #     st.markdown("##### 🏁 Final Answer")
-                                #     st.latex(sp.latex(roots))
-
-
-                            # -----------------------------------
-                            # CASE 2: Polynomial (check degree)
-                            # -----------------------------------
-                            #else:
-                            #    degree = sp.degree(expr, gen=var)
-                            #    st.write(f"Equation degree: {degree}")
-
-                                elif degree == 2:
-                                    st.write("This is a quadratic equation.")
-
-                                    factored = sp.factor(expr)
-
-                                    # ✔ Factorisation works
-                                    if factored != expr:
-                                        st.write("Factorisation possible:")
-                                        st.latex(f"{sp.latex(factored)} = 0")
-
-                                        roots = sp.solve(factored, var)
-                                        for r in roots:
-                                            st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
-
-                                    # ❌ Must use quadratic formula
-                                    else:
-                                        st.write("Cannot factorise — using quadratic formula")
-
-                                        a = expr.coeff(var, 2)
-                                        b = expr.coeff(var, 1)
-                                        c = expr.coeff(var, 0)
-
-                                        st.markdown("##### Identify coefficients")
-                                        st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
-
-                                        st.markdown("##### Quadratic Formula")
-                                        st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
-
-                                        st.markdown("##### Substitute values")
-                                        st.latex(
-                                            rf"x = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}"
-                                        )
-
-                                        discriminant = b**2 - 4*a*c
-
-                                        st.markdown("##### Discriminant")
-                                        st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
-                                        st.latex(rf"\Delta = {sp.latex(discriminant)}")
-
-                                        if discriminant < 0:
-                                            #st.error("No real roots.")
-                                            st.error("Since the discriminant is negative, there are **no real roots**.")
-                                            st.info("Grade 12 learners do not work with complex numbers.")
-                                            can_proceed = False
-                                        else:
-                                            roots = sp.solve(expr, var)
-                                            st.markdown("##### Roots")
-                                            st.info("Since the determinant is non-negative, there exist at least one real roots.")
-                                            for r in roots:
-                                                st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
-                            
-                                                        # # -----------------------------------
-                            # # FINAL OUTPUT
-                                # -----------------------------------
-                                if can_proceed:
-                                    st.markdown("**Roots:**")
-                                    for r in roots:
-                                        st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
-
-                                    st.markdown("##### 🏁 Final Answer")
-                                    st.latex(sp.latex(roots))
-
-
-
-                                # -----------------------------------
-                                # CASE 3: Not quadratic
-                                #-------------------------------------
-                                
-                                # ------------------------------------------------
-                                # CASE: Polynomial (Quadratic/Cubic/Other)
-                                # ------------------------------------------------
+                                if factored != expr_std:
+                                    st.write("Factorising the expression:")
+                                    st.latex(sp.latex(factored) + " = 0")
                                 else:
-                                    degree = sp.degree(expr, gen=var)
-                                    #st.markdown(f"**Step 2.1: Write the equation**")
-                                    #st.latex(sp.latex(expr) + " = 0")
-                                    
-                                    expr_std = sp.expand(expr)
-                                    factored = sp.factor(expr_std)
+                                    pass
+                                    #st.warning("Expression cannot be factorised further using Grade 12 methods.")
+                                    #factored = expr_std
 
-                                    # Check if we can show factoring steps
-                                    if factored != expr_std:
-                                        st.write("The expression can be factorised:")
-                                        st.latex(sp.latex(factored) + " = 0")
-                                        
-                                        # This breaks (x-1)(x^2-8x+4) into [(x-1), (x^2-8x+4)]
-                                        factors_dict = factored.as_powers_dict()
-                                        factors = list(factors_dict.keys())
-                                        
-                                        all_roots = []
-                                        
-                                        for f in factors:
-                                            if not f.has(var): continue # Skip constants
-                                            
-                                            f_degree = sp.degree(f, var)
-                                            
-                                            # --- Handle Linear Factor (e.g., x - 1) ---
-                                            if f_degree == 1:
-                                                r_linear = sp.solve(f, var)[0]
-                                                st.markdown(f"**Solve linear factor:** ${sp.latex(f)} = 0$")
-                                                st.latex(rf"{sp.latex(var)} = {sp.latex(r_linear)}")
-                                                all_roots.append(r_linear)
-                                            
-                                            # --- Handle Quadratic Factor (e.g., x^2 - 8x + 4) ---
-                                            elif f_degree == 2:
-                                                st.markdown(f"**Solve quadratic factor using formula:** ${sp.latex(f)} = 0$")
-                                                
-                                                a_val = f.coeff(var, 2)
-                                                b_val = f.coeff(var, 1)
-                                                c_val = f.coeff(var, 0)
-                                                
-                                                st.latex(rf"a = {a_val}, \quad b = {b_val}, \quad c = {c_val}")
-                                                
-                                                # Show Substitution
-                                                st.latex(rf"{sp.latex(var)} = \frac{{-({b_val}) \pm \sqrt{{({b_val})^2 - 4({a_val})({c_val})}}}}{{2({a_val})}}")
-                                                
-                                                # Calculate Discriminant
-                                                disc = b_val**2 - 4*a_val*c_val
-                                                st.latex(rf"\Delta = {sp.latex(disc)}")
-                                                
-                                                # Calculate individual roots
-                                                r1 = sp.simplify((-b_val + sp.sqrt(disc)) / (2*a_val))
-                                                r2 = sp.simplify((-b_val - sp.sqrt(disc)) / (2*a_val))
-                                                
-                                                st.latex(rf"{sp.latex(var)} = {sp.latex(r1)} \quad \text{{or}} \quad {sp.latex(var)} = {sp.latex(r2)}")
-                                                all_roots.extend([r1, r2])
-                                            
-
-                                            # --- Final Answer Section ---
-                                            st.markdown("### 🏁 Final Answer")
-                                            # Cleaning up duplicates (e.g., if a root is repeated)
-                                            unique_roots = []
-                                            for r in all_roots:
-                                                if r not in unique_roots: unique_roots.append(r)
-                                                
-                                            final_string = " \\text{ or } ".join([f"{sp.latex(var)} = {sp.latex(r)}" for r in unique_roots])
-                                            st.latex(final_string)
-
-                                    else:
-                                        st.write("Problem Solved!")
-                                        # Fallback if no factors are found
-                                        # st.write("No simple factors found. Solving numerically/generally:")
-                                        # roots = sp.solve(expr_std, var)
-                                        # for r in roots:
-                                        #     st.latex(rf"{sp.latex(var)} = {sp.latex(r)}")
-
-
-
-                                # else:
-                                #     st.write("Not a quadratic — using general solver.")
-                                #     solution = sp.solve(expr, var)
-                                #     for r in solution:
-                                #         st.latex(f"{sp.latex(var)} = {sp.latex(r)}")
-
-                                # -----------------------------------
-                                # MULTI-VARIABLE SYSTEM (STEP-BY-STEP)
-                                # -----------------------------------
-                        else:
-                            st.markdown("### 🔢 Solving Simultaneous Equations (Elimination Method)")
-
-                            # Only handle 2 equations & 2 variables for step-by-step
-                            if len(parsed_eqs) == 2 and len(var_list) == 2:
-                                x, y = var_list
-                                eq1, eq2 = parsed_eqs
-
-                                # Convert to Eq objects if needed
-                                if not isinstance(eq1, sp.Equality):
-                                    eq1 = sp.Eq(eq1, 0)
-                                if not isinstance(eq2, sp.Equality):
-                                    eq2 = sp.Eq(eq2, 0)
-
-                                st.markdown("**Step 1: Write the equations**")
-
-                                # Use raw equations exactly as entered
-                                lhs1, rhs1 = raw_eqs[0].split("=")
-                                lhs2, rhs2 = raw_eqs[1].split("=")
-
-                                eq1_display = sp.Eq(
-                                    sp.sympify(lhs1, locals=symbols_dict),
-                                    sp.sympify(rhs1, locals=symbols_dict)
-                                )
-
-                                eq2_display = sp.Eq(
-                                    sp.sympify(lhs2, locals=symbols_dict),
-                                    sp.sympify(rhs2, locals=symbols_dict)
-                                )
-
-                                st.latex(sp.latex(eq1_display))
-                                st.latex(sp.latex(eq2_display))
-
-
-                                # Move to standard form
-                                expr1 = eq1.lhs - eq1.rhs
-                                expr2 = eq2.lhs - eq2.rhs
-
-                                a1 = expr1.coeff(x)
-                                b1 = expr1.coeff(y)
-                                c1 = -expr1.subs({x: 0, y: 0})
-
-                                a2 = expr2.coeff(x)
-                                b2 = expr2.coeff(y)
-                                c2 = -expr2.subs({x: 0, y: 0})
-
-                                st.markdown("**Step 2: Write in standard form**")
-                                #st.latex(rf"{a1}{sp.latex(x)} + {b1}{sp.latex(y)} = {c1}")
-                                #st.latex(rf"{a2}{sp.latex(x)} + {b2}{sp.latex(y)} = {c2}")
-                                st.latex(sp.latex(eq1))
-                                st.latex(sp.latex(eq2))
-
-                                # -----------------------------------
-                                # Step 3: Eliminate one variable (SHOW FULL SIMPLIFICATION)
-                                # -----------------------------------
-                                st.markdown("**Step 3: Eliminate one variable**")
-
-                                st.markdown("Subtract equation (2) from equation (1):")
-
-                                # Step 3.1: Write subtraction explicitly
-                                st.markdown("**Step 3.1: Substitute and subtract**")
-                                st.latex(
-                                    rf"({sp.latex(expr1)}) - ({sp.latex(expr2)}) = 0"
-                                )
-
-                                # Step 3.2: Remove brackets (change signs)
-                                st.markdown("**Step 3.2: Remove brackets**")
-
-                                removed_brackets = expr1 - expr2
-                                st.latex(
-                                    rf"{sp.latex(expr1)} - {sp.latex(expr2)} = 0"
-                                )
-
-                                # Step 3.3: Expand terms
-                                st.markdown("**Step 3.3: Expand terms**")
-
-                                expanded = sp.expand(expr1 - expr2)
-                                st.latex(sp.latex(expanded) + " = 0")
-                                #rf"{sp.latex(expanded)} = 0"
-                                #st.latex(sp.latex(expanded))
-
-                                # Step 3.4: Rearrange to standard form
-                                st.markdown("**Step 3.4: Rearrange and simplify**")
-
-                                simplified = sp.simplify(expanded)
-                                st.latex(sp.latex(simplified) + " = 0")
-
-                                new_eq = simplified
-
-
-
-                                # Solve for y
-                                y_value = sp.solve(new_eq, y)[0]
-
-                                # --- Step 4: Solve for y ---
-                                # We calculate the expression for y first
-                                y_expr = sp.solve(new_eq, y)[0] 
-
-                                st.markdown("**Step 4: Solve for** $y$")
-                                # If y_expr still contains 'x', we show it as an intermediate step
-                                st.latex(rf"{sp.latex(y)} = {sp.latex(y_expr)}")
-
-                                # --- Step 5: Substitute into one of the original equations ---
-                                st.markdown("**Step 5: Substitute into one of the original equations**")
-                                substituted = eq1.subs(y, y_expr)
-                                st.latex(sp.latex(substituted))
-
-                                # --- Step 6: Solve for x ---
-                                x_value = sp.solve(substituted, x)[0]
-                                st.markdown("**Step 6: Solve for** $x$")
-                                st.latex(rf"{sp.latex(x)} = {sp.latex(x_value)}")
-
-                                # --- Final Answer (With explicit substitution for y) ---
-                                st.markdown("### 🏁 Final Answer")
-
-                                # 1. Substitute the numerical x_value into the y_expression to show the "work"
-                                y_final_substitution = y_expr.subs(x, x_value)
-                                y_final_numeric = sp.simplify(y_final_substitution)
-
-                                # 2. Display x
-                                st.latex(rf"{sp.latex(x)} = {sp.latex(x_value)}")
-
-                                # 3. Display y substitution step (e.g., y = 30 - 3)
-                                # We check if y_expr was dependent on x to avoid redundant lines if y was already a number
-                                if y_expr.has(x):
-                                    st.latex(rf"{sp.latex(y)} = {sp.latex(y_expr.subs(x, sp.Symbol(sp.latex(x_value))))}") 
-                                    
-                                # 4. Display y final result (e.g., y = 27)
-                                st.latex(rf"{sp.latex(y)} = {sp.latex(y_final_numeric)}")
-
+                            # ----------------------------------
+                            # CASE 3: RHS ≠ 0 → must expand
+                            # ----------------------------------
                             else:
-                                st.warning("Step-by-step solution is currently supported for 2 equations with 2 variables only.")
-                                solution = sp.solve(parsed_eqs, var_list, dict=True)
-                                for sol in solution:
-                                    for var in var_list:
-                                        st.latex(f"{sp.latex(var)} = {sp.latex(sol[var])}")
+                                st.write("Right-hand side is not zero. Rewrite in standard form.")
+                                expr_std = sp.expand(expr_raw)
+                                st.latex(sp.latex(expr_std) + " = 0")
+                                factored = sp.factor(expr_std)
+
+
+                            # ----------------------------------
+                            # STEP 4: Solve factor-by-factor
+                            # ----------------------------------
+                            #st.info("Solve each factor:")
+
+                            factors = factored.as_ordered_factors()
+                            all_roots = []
+
+                            for f in factors:
+                                
+                                # Remove powers: (x-2)^2 → x-2
+                                base, power = f.as_base_exp()
+                                base = sp.factor(base)
+
+                                if not base.has(var):
+                                    continue
+
+                                deg = sp.degree(base, var)
+
+                                # ------------------------------
+                                # LINEAR FACTOR
+                                # ------------------------------
+                                
+                                if deg == 1:
+                                    st.markdown(f"**Solve:** ${sp.latex(base)} = 0$")
+                                    root = sp.solve(base, var)[0]
+                                    st.latex(rf"{sp.latex(var)} = {sp.latex(root)}")
+                                    all_roots.append(root)
+
+                                # ------------------------------
+                                # QUADRATIC FACTOR
+                                # ------------------------------
+                                elif deg == 2:
+                                    st.info(f"**Solve quadratic factor:** ${sp.latex(base)} = 0$")
+
+                                    a = base.coeff(var, 2)
+                                    b = base.coeff(var, 1)
+                                    c = base.coeff(var, 0)
+
+                                    st.markdown("Quadratic Formula:")
+                                    st.latex(r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}")
+                                    st.latex(rf"a = {a}, \quad b = {b}, \quad c = {c}")
+                                    st.latex(rf"{sp.latex(var)} = \frac{{-({b}) \pm \sqrt{{({b})^2 - 4({a})({c})}}}}{{2({a})}}")
+
+                                    discriminant = b**2 - 4*a*c
+                                    st.latex(r"\Delta = b^2 - 4ac")
+                                    st.latex(rf"\Delta = ({b})^2 - 4({a})({c})")
+                                    st.latex(rf"\Delta = {sp.latex(discriminant)}")
+
+                                    if discriminant < 0:
+                                        st.error("No real roots (ignored at Grade 12 level).")
+                                        continue
+
+                                    roots = sp.solve(base, var)
+                                    for r in roots:
+                                        st.latex(rf"{sp.latex(var)} = {sp.latex(r)}")
+                                        all_roots.append(r)
+
+                                # ------------------------------
+                                # HIGHER DEGREE (IGNORED)
+                                # ------------------------------
+                                else:
+                                    st.warning(
+                                        f"Factor ${sp.latex(base)}$ is degree {deg} and "
+                                        "cannot be solved using Grade 12 methods."
+                                    )
+
+                            # ----------------------------------
+                            # FINAL ANSWER
+                            # ----------------------------------
+                            st.markdown("###### 🏁 Final Answer")
+
+                            # Remove duplicates (handles repeated roots)
+                            final_roots = list(dict.fromkeys(all_roots))
+
+                            if final_roots:
+                                answer = " \\text{ or } ".join(
+                                    [rf"{sp.latex(var)} = {sp.latex(r)}" for r in final_roots]
+                                )
+                                st.latex(answer)
+                            else:
+                                st.error("No real solutions found.")
+
+                        else:
+                            st.warning("This solver currently supports ONE equation with ONE variable only.")
 
 
                 except Exception as e:
                     st.error("Error parsing expression.")
                     st.caption(str(e))
+
        #-----------------------------------------------------------------------------------------------         
                            #SEQUENCES MODULE
         #----------------------------------------------------------------------------------------------
