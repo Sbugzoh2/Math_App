@@ -13,5 +13,5 @@ pytesseract
 Pillow
 matplotlib
 PyMuPDF
-fitz  
-solve_univariate_inequality
+#fitz  
+#solve_univariate_inequality
